@@ -1,7 +1,7 @@
 
 # Answer Grading System
 
-Automated answer grading system using advanced algorithms. The system is built with Python and Flask to help educational institutions automate the grading of student answers, making the grading process faster and more efficient.
+Automated answer grading system using advanced algorithms. The system is built with Python and Flask to help educational institutions automate the grading of student answers, making the grading process faster and more efficient.An AI model capable of automatically evaluating student-written answers by comparing them with model (reference) answers, using semantic understanding rather than exact word matching.
 
 ---
 
@@ -26,6 +26,14 @@ The core functionality includes:
 - Grading answers based on specific algorithms and grading rubrics.
 - Offering feedback on incorrect answers.
 - Generating reports on grading efficiency.
+- Semantic Similarity: Compute cosine similarity between student and reference embeddings.
+- Deep Learning/LLM Grading:
+o	Fine-tune a regression/classification model to predict a score.
+o	Optionally, use GPT-based models to generate textual feedback.
+
+- 	A numerical score (0–5 or 0–10)
+- Qualitative feedback (strengths and weaknesses in the student’s answer)
+
 
 ---
 
@@ -45,7 +53,6 @@ The core functionality includes:
 - **Python 3.x**: Main programming language used for the backend.
 - **Flask**: Lightweight web framework for creating the application.
 - **HTML/CSS**: For creating the frontend interface.
-- **SQLite/MySQL/PostgreSQL** (Optional): Database support for storing grades and user data.
 - **JavaScript** (Optional): For enhanced interactivity on the frontend.
 
 ---
