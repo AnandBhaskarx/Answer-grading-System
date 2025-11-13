@@ -78,11 +78,15 @@
 
         <!-- Output Section -->
         {% if score %}
-        <div class="output {{ feedback_class }} mt-8 p-6 bg-gray-100 rounded-lg shadow-md fade-in">
+        <div class="output {{ feedback_class }} mt-8 p-6 rounded-lg shadow-md fade-in">
             <h3 class="text-2xl font-semibold">Predicted Score: {{ score }}</h3>
-            <h3 class="text-lg text-gray-700 mt-2">Feedback: {{ feedback }}</h3>
+            <div class="feedback mt-4">
+                <h3 class="font-bold text-lg">Feedback:</h3>
+                <p class="text-gray-800" style="white-space: pre-line;">{{ feedback|safe }}</p>
+            </div>
+
             <div class="model-answer mt-4">
-                <h3 class="font-bold">Model Answer:</h3>
+                <h3 class="font-bold text-lg">Model Answer:</h3>
                 <p class="text-gray-800">{{ model_answer }}</p>
             </div>
         </div>
