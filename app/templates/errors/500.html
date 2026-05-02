@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  .error-page {
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .error-code {font-size: 8rem; font-weight: 900; background: linear-gradient(135deg, #ef4444, #b91c1c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+  .error-title {font-size: 1.8rem; font-weight: 700; margin: 12px 0 8px; color: #1e293b;}
+  .error-desc {color: #64748b; max-width: 420px; margin-bottom: 28px;}
+  .error-icon {font-size: 4rem; margin-bottom: 12px; animation: shake 0.8s infinite;}
+  @keyframes shake {0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+</style>
+<div class="error-page">
+  <div class="error-icon">⚠️</div>
+  <div class="error-code">500</div>
+  <div class="error-title">Server Error</div>
+  <p class="error-desc">Oops! Something went wrong on our side. Please try again later or contact support.</p>
+  <a href="{{ url_for('main.index') }}" class="btn btn-primary px-4 py-2">← Back to Home</a>
+</div>
+{% endblock %}

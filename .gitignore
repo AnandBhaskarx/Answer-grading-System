@@ -1,0 +1,57 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ─── Virtual Environments ─────────────────────────────────────────────────────
+env/
+venv/
+myenv/
+.venv/
+ENV/
+
+# ─── Environment / Secrets ────────────────────────────────────────────────────
+.env
+*.env
+.env.*
+!.env.example
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+*.sqlite3
+*.db
+
+# ─── Flask / Alembic ──────────────────────────────────────────────────────────
+instance/
+flask_session/
+
+# ─── Uploaded Files (student answer sheets, question papers) ──────────────────
+app/uploads/
+uploads/
+
+# ─── ML Model Weights ─────────────────────────────────────────────────────────
+model.safetensors
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+
+# ─── IDE & OS ─────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Misc ─────────────────────────────────────────────────────────────────────
+path/

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1">
+        <li class="breadcrumb-item"><a href="{{ url_for('teacher.manage_classes') }}">Manage Classes</a></li>
+        <li class="breadcrumb-item active">{{ classroom.name }}</li>
+      </ol>
+    </nav>
+    <h1 class="h2 fw-bold mb-0">🏫 {{ classroom.name }}</h1>
+  </div>
+  <a href="{{ url_for('teacher.manage_classes') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> All Classes
+  </a>
+</div>
+
+{% set ns = namespace(total_graded=0) %}
+{% for asgn in assignments %}{% set ns.total_graded = ns.total_graded + (asgn.submissions|length) %}{% endfor %}
+
+<!-- Default Password Banner -->
+{% if classroom.default_password %}
+<div class="alert alert-success d-flex align-items-center justify-content-between mb-4 shadow-sm" role="alert">
+  <div><i class="bi bi-shield-check me-2"></i> <strong>Default student password is set.</strong> Students can log in using their enrollment number + the password you chose.</div>
+  <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#changePwdModal">Change Password</button>
+</div>
+{% else %}
+<div class="alert alert-warning d-flex align-items-center justify-content-between mb-4 shadow-sm" role="alert">
+  <div><i class="bi bi-shield-exclamation me-2"></i> <strong>No default password set.</strong> You must set one before evaluating any student copies — students need it to log in.</div>
+  <button class="btn btn-sm btn-warning fw-bold" data-bs-toggle="modal" data-bs-target="#changePwdModal">Set Password Now</button>
+</div>
+{% endif %}
+
+<!-- Set / Change Default Password Modal -->
+<div class="modal fade" id="changePwdModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header bg-primary text-white">
+      <h5 class="modal-title">🔑 Set Default Student Password</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <form method="POST" action="{{ url_for('teacher.set_default_password', classroom_id=classroom.id) }}">
+      <div class="modal-body">
+        <p class="text-muted">This password will be shared with students so they can log in for the first time. They will be required to change it immediately after logging in.</p>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Default Password</label>
+          <input type="text" class="form-control form-control-lg" name="default_password" required minlength="6" placeholder="e.g. physics@2024">
+          <div class="form-text">Minimum 6 characters. Share this verbally or on the board — do NOT send digitally.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary fw-bold">Save Password</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem;">👥</div>
+      <div class="h3 fw-bold mb-0">{{ students|length }}</div>
+      <small class="text-muted">Students</small>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem;">📚</div>
+      <div class="h3 fw-bold mb-0">{{ assignments|length }}</div>
+      <small class="text-muted">Exams</small>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem;">✅</div>
+      <div class="h3 fw-bold mb-0">{{ ns.total_graded }}</div>
+      <small class="text-muted">Total Graded</small>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div style="font-size:2rem;">🆔</div>
+      <div class="h3 fw-bold mb-0">#{{ classroom.id }}</div>
+      <small class="text-muted">Classroom ID</small>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Students List -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom fw-bold py-3">
+        <i class="bi bi-people-fill text-primary me-2"></i> Enrolled Students
+        <span class="badge bg-primary rounded-pill ms-2">{{ students|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if students %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4 py-3">Student</th>
+                <th class="py-3">Enrollment No.</th>
+                <th class="py-3 text-center">Exams Taken</th>
+                <th class="py-3 text-center">Account</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for stu in students %}
+              {% set sub_count = stu.submissions | length %}
+              <tr>
+                <td class="ps-4">
+                  <div class="d-flex align-items-center gap-3">
+                    <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.9rem;flex-shrink:0;">
+                      {{ stu.name[0].upper() }}
+                    </div>
+                    <div>
+                      <div class="fw-semibold">{{ stu.name }}</div>
+                      <small class="text-muted">{{ stu.email or '—' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td><code class="text-primary">{{ stu.enrollment_number or '—' }}</code></td>
+                <td class="text-center"><span class="badge bg-secondary rounded-pill">{{ sub_count }}</span></td>
+                <td class="text-center">
+                  {% if stu.user_id %}
+                    <span class="badge bg-success">Active</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Stub</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <div style="font-size:3rem;">👤</div>
+          <p class="text-muted mt-2">No students enrolled yet. Students appear here when they sign up with your classroom's enrollment number, or when you evaluate a copy for a new student.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Exams List -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom fw-bold py-3">
+        <i class="bi bi-file-earmark-text text-success me-2"></i> Exams in this Class
+        <span class="badge bg-success rounded-pill ms-2">{{ assignments|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if assignments %}
+          {% for asgn in assignments %}
+          <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
+            <div>
+              <div class="fw-semibold">{{ asgn.title }}</div>
+              <small class="text-muted">Max: {{ asgn.max_marks }} marks | {{ asgn.submissions|length }} graded</small>
+            </div>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('teacher.evaluate_copies', assignment_id=asgn.id) }}" class="btn btn-sm btn-success" title="Evaluate">
+                <i class="bi bi-file-earmark-check"></i>
+              </a>
+              <a href="{{ url_for('teacher.assignment_results', assignment_id=asgn.id) }}" class="btn btn-sm btn-outline-primary" title="Results">
+                <i class="bi bi-list-ol"></i>
+              </a>
+              <a href="{{ url_for('analytics.exam_analytics', assignment_id=asgn.id) }}" class="btn btn-sm btn-outline-secondary" title="Analytics">
+                <i class="bi bi-bar-chart"></i>
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <p>No exams for this classroom yet.</p>
+          <a href="{{ url_for('teacher.quick_grade') }}" class="btn btn-sm btn-success">Create Exam</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

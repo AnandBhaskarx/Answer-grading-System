@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Create Exam (Document-Based)</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-plus"></i> Initialize New Examination</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('teacher.quick_grade') }}">
+                    
+                    <h6 class="text-uppercase text-muted fw-bold mb-3">1. Basic Details</h6>
+                    
+                    <div class="mb-3">
+                        <label for="classroom_id" class="form-label fw-semibold">Target Classroom</label>
+                        <select class="form-select" id="classroom_id" name="classroom_id" required>
+                            <option value="" disabled selected>Select a Classroom...</option>
+                            {% for classroom in classrooms %}
+                                <option value="{{ classroom.id }}">{{ classroom.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-semibold">Exam Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required placeholder="e.g., Midterm Computer Science 101">
+                    </div>
+                    <div class="mb-4">
+                        <label for="description" class="form-label fw-semibold">Description / Instructions</label>
+                        <textarea class="form-control" id="description" name="description" rows="2" placeholder="Optional instructions..."></textarea>
+                    </div>
+
+                    <h6 class="text-uppercase text-muted fw-bold mb-3">2. Grading Rubrics</h6>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="max_marks" class="form-label fw-semibold">Maximum Marks</label>
+                            <input type="number" step="0.5" class="form-control" id="max_marks" name="max_marks" required value="100">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="passing_percentage" class="form-label fw-semibold">Passing Percentage (%)</label>
+                            <input type="number" step="1" class="form-control" id="passing_percentage" name="passing_percentage" required value="40">
+                        </div>
+                    </div>
+
+                    <h6 class="text-uppercase text-muted fw-bold mb-3">3. Master Documents</h6>
+                    <div class="alert alert-info">
+                        <small>Upload the master <strong>Question Paper</strong> and <strong>Answer Key</strong>. Our AI will embed these documents to accurately grade student handwriting submissions in the next step.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="question_paper" class="form-label fw-semibold">Upload Question Paper (PDF/Multiple Images)</label>
+                        <input class="form-control" type="file" id="question_paper" name="question_paper" accept=".pdf,image/*" multiple required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="answer_key" class="form-label fw-semibold">Upload Master Answer Key (PDF/Multiple Images)</label>
+                        <input class="form-control" type="file" id="answer_key" name="answer_key" accept=".pdf,image/*" multiple required>
+                    </div>
+
+                    <div class="d-grid mt-5">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold">Create Exam & Embed Documents</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

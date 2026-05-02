@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+.kpi-card { background:#fff; border-radius:16px; padding:22px 20px; box-shadow:0 2px 12px rgba(0,0,0,.07); display:flex; align-items:center; gap:14px; transition:transform .2s, box-shadow .2s; }
+.kpi-card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.12); }
+.kpi-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
+.kpi-label { font-size:.72rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+.kpi-value { font-size:1.85rem; font-weight:800; color:#0f172a; line-height:1.1; }
+.section-title { font-size:1rem; font-weight:700; color:#1e293b; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.quick-action { display:flex; align-items:center; gap:12px; padding:16px 18px; background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.07); text-decoration:none; color:#1e293b; transition:all .2s; margin-bottom:12px; border-left:4px solid transparent; }
+.quick-action:hover { transform:translateX(4px); box-shadow:0 4px 16px rgba(0,0,0,.12); color:#1e293b; }
+.qa-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+.qa-label { font-weight:700; font-size:.9rem; }
+.qa-sub { font-size:.78rem; color:#64748b; }
+.classroom-card { background:#fff; border-radius:14px; padding:16px 18px; box-shadow:0 2px 10px rgba(0,0,0,.07); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; }
+.recent-item { display:flex; align-items:center; gap:14px; padding:14px 16px; background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:10px; transition:box-shadow .2s; }
+.recent-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.12); }
+.recent-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:.95rem; flex-shrink:0; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 fw-bold mb-1">Teacher Dashboard</h1>
+    <p class="text-muted mb-0">Welcome back, {{ current_user.username }} 👋</p>
+  </div>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createClassroomModal">
+    <i class="bi bi-plus-circle me-1"></i> New Classroom
+  </button>
+</div>
+
+<!-- Create Classroom Modal -->
+<div class="modal fade" id="createClassroomModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header bg-primary text-white">
+      <h5 class="modal-title">Create New Classroom</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <form method="POST" action="{{ url_for('teacher.create_classroom') }}">
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="className" class="form-label fw-bold">Classroom Name</label>
+          <input type="text" class="form-control" id="className" name="name" required placeholder="e.g. Physics 101">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+
+<!-- KPI Cards (loaded via JS) -->
+<div class="kpi-grid" id="kpi-grid">
+  <div class="kpi-card"><div class="kpi-icon" style="background:#ede9fe;">📝</div><div><div class="kpi-label">Total Graded</div><div class="kpi-value" id="kpi-subs">—</div></div></div>
+  <div class="kpi-card"><div class="kpi-icon" style="background:#dbeafe;">🎯</div><div><div class="kpi-label">Avg Score</div><div class="kpi-value" id="kpi-avg">—</div></div></div>
+  <div class="kpi-card"><div class="kpi-icon" style="background:#dcfce7;">✅</div><div><div class="kpi-label">Pass Rate</div><div class="kpi-value" id="kpi-pass">—</div></div></div>
+  <div class="kpi-card"><div class="kpi-icon" style="background:#fef3c7;">👥</div><div><div class="kpi-label">Students</div><div class="kpi-value" id="kpi-students">—</div></div></div>
+  <div class="kpi-card"><div class="kpi-icon" style="background:#fce7f3;">📚</div><div><div class="kpi-label">Exams</div><div class="kpi-value" id="kpi-exams">—</div></div></div>
+</div>
+
+<div class="row g-4">
+  <!-- Left col: Classrooms + Exams -->
+  <div class="col-lg-7">
+    <!-- My Classrooms -->
+    <div class="section-title"><i class="bi bi-building text-primary"></i> My Classrooms</div>
+    {% if classrooms %}
+      {% for cls in classrooms %}
+      <div class="classroom-card">
+        <div>
+          <div class="fw-bold">{{ cls.name }}</div>
+          <small class="text-muted">{{ cls.students|length }} student{{ 's' if cls.students|length != 1 else '' }} enrolled</small>
+        </div>
+        <span class="badge bg-primary rounded-pill">{{ cls.students|length }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="alert alert-info">No classrooms yet. Create one above!</div>
+    {% endif %}
+
+    <!-- Active Exams -->
+    <div class="section-title mt-4"><i class="bi bi-file-earmark-text text-success"></i> Active Exams</div>
+    {% if assignments %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr><th>Title</th><th>Max Marks</th><th>Graded</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for asgn in assignments %}
+            <tr>
+              <td><strong>{{ asgn.title }}</strong></td>
+              <td>{{ asgn.max_marks }}</td>
+              <td><span class="badge bg-secondary rounded-pill">{{ asgn.submissions|length }}</span></td>
+              <td>
+                <a href="{{ url_for('teacher.evaluate_copies', assignment_id=asgn.id) }}" class="btn btn-sm btn-success me-1">
+                  <i class="bi bi-file-earmark-check"></i> Evaluate
+                </a>
+                <a href="{{ url_for('teacher.assignment_results', assignment_id=asgn.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                  <i class="bi bi-list-ol"></i> Results
+                </a>
+                <a href="{{ url_for('analytics.exam_analytics', assignment_id=asgn.id) }}" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-bar-chart"></i> Analytics
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">No exams yet. <a href="{{ url_for('teacher.quick_grade') }}">Create one →</a></div>
+    {% endif %}
+  </div>
+
+  <!-- Right col: Quick Actions + Recent Activity -->
+  <div class="col-lg-5">
+    <div class="section-title"><i class="bi bi-lightning-charge text-warning"></i> Quick Actions</div>
+    <a href="{{ url_for('teacher.quick_grade') }}" class="quick-action" style="border-left-color:#6366f1;">
+      <div class="qa-icon" style="background:#ede9fe;">📝</div>
+      <div><div class="qa-label">Create New Exam</div><div class="qa-sub">Upload question paper & answer key</div></div>
+    </a>
+    <a href="{{ url_for('analytics.dashboard') }}" class="quick-action" style="border-left-color:#10b981;">
+      <div class="qa-icon" style="background:#dcfce7;">📊</div>
+      <div><div class="qa-label">View Analytics</div><div class="qa-sub">Charts, trends, at-risk students</div></div>
+    </a>
+    <a href="{{ url_for('analytics.export_csv') }}" class="quick-action" style="border-left-color:#f59e0b;">
+      <div class="qa-icon" style="background:#fef3c7;">📥</div>
+      <div><div class="qa-label">Export Report (CSV)</div><div class="qa-sub">Download all submission records</div></div>
+    </a>
+
+    <!-- Recent Activity -->
+    <div class="section-title mt-4"><i class="bi bi-clock-history text-info"></i> Recent Evaluations</div>
+    <div id="recent-activity">
+      <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadDashboardData() {
+  try {
+    const res = await fetch('{{ url_for("analytics.dashboard_data") }}');
+    const data = await res.json();
+    const s = data.stats;
+
+    document.getElementById('kpi-subs').textContent     = s.total_submissions;
+    document.getElementById('kpi-avg').textContent      = s.overall_avg_pct.toFixed(1) + '%';
+    document.getElementById('kpi-pass').textContent     = s.pass_rate.toFixed(1) + '%';
+    document.getElementById('kpi-students').textContent = s.total_students;
+    document.getElementById('kpi-exams').textContent    = s.total_assignments;
+
+    const container = document.getElementById('recent-activity');
+    if (!data.recent.length) {
+      container.innerHTML = '<div class="text-muted text-center py-3">No evaluations yet.</div>';
+      return;
+    }
+    container.innerHTML = data.recent.map(r => `
+      <a href="/teacher/submission/${r.submission_id}" class="recent-item text-decoration-none">
+        <div class="recent-avatar">${r.student_name.charAt(0).toUpperCase()}</div>
+        <div class="flex-grow-1">
+          <div class="fw-bold" style="font-size:.88rem;">${r.student_name} <small class="text-muted">(${r.enrollment})</small></div>
+          <div style="font-size:.78rem; color:#64748b;">${r.exam_title} — ${r.date}</div>
+        </div>
+        <div class="text-end">
+          <span class="badge ${r.passed ? 'bg-success' : 'bg-danger'}">${r.pct}%</span>
+        </div>
+      </a>
+    `).join('');
+  } catch(e) {
+    document.getElementById('kpi-subs').textContent = '—';
+    console.error(e);
+  }
+}
+loadDashboardData();
+</script>
+{% endblock %}

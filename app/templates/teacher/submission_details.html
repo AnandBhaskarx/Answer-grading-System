@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+    <div>
+        <h1 class="h2">Detailed Evaluation Report</h1>
+        <p class="text-muted mb-0">Exam: <span class="fw-bold">{{ submission.assignment.title }}</span> | Student: <span class="fw-bold">{{ submission.student.name }} ({{ submission.student.enrollment_number }})</span></p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('teacher.assignment_results', assignment_id=submission.assignment_id) }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Results
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-primary">
+            <div class="card-body text-center">
+                <h5 class="card-title text-muted text-uppercase mb-3">Total Score</h5>
+                <div class="display-3 fw-bold text-primary mb-2">
+                    {{ submission.score }}
+                </div>
+                <h5 class="text-muted">out of {{ submission.assignment.max_marks }}</h5>
+                
+                {% set pass_status = (submission.score / submission.assignment.max_marks * 100) >= submission.assignment.passing_percentage %}
+                <div class="mt-4">
+                    {% if pass_status %}
+                        <span class="badge bg-success fs-5 p-2 w-75">PASSED</span>
+                    {% else %}
+                        <span class="badge bg-danger fs-5 p-2 w-75">FAILED</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card shadow-sm h-100 border-info">
+            <div class="card-body">
+                <h5 class="card-title text-info fw-bold mb-3"><i class="bi bi-robot"></i> AI Overall Feedback</h5>
+                <p class="fs-5">{{ submission.feedback_summary }}</p>
+            </div>
+            <div class="card-footer bg-light text-muted text-end">
+                <small>Evaluated on: {{ submission.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="mb-3 fw-bold">Question-by-Question Breakdown</h4>
+<div class="card shadow-sm mb-5">
+    <div class="card-body p-0">
+        {% if submission.detailed_analysis %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%" class="text-center py-3">Q#</th>
+                            <th style="width: 40%" class="py-3">Extracted Student Answer</th>
+                            <th style="width: 40%" class="py-3">Specific AI Feedback</th>
+                            <th style="width: 15%" class="text-center py-3">Marks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for q in submission.detailed_analysis %}
+                        <tr>
+                            <td class="text-center fw-bold fs-5">{{ q.question_number }}</td>
+                            <td><div class="p-2 bg-light rounded text-muted fst-italic border" style="max-height: 150px; overflow-y: auto;">"{{ q.student_answer_extracted }}"</div></td>
+                            <td><div class="p-2">{{ q.feedback }}</div></td>
+                            <td class="text-center">
+                                <div class="fs-4 fw-bold text-{% if q.marks_awarded == q.max_marks_for_question %}success{% elif q.marks_awarded > 0 %}warning{% else %}danger{% endif %}">
+                                    {{ q.marks_awarded }}
+                                </div>
+                                <div class="text-muted">out of {{ q.max_marks_for_question }}</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-exclamation-circle fs-1 mb-3"></i>
+                <p>No detailed breakdown available for this evaluation.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+.kpi-card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,.07); text-align:center; }
+.kpi-card .kpi-val { font-size:2rem; font-weight:800; color:#0f172a; }
+.kpi-card .kpi-lbl { font-size:.75rem; color:#64748b; text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+.chart-card { background:#fff; border-radius:16px; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
+.chart-card h5 { font-size:.95rem; font-weight:700; color:#1e293b; margin-bottom:16px; }
+.chart-wrap { position:relative; height:280px; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 fw-bold mb-1">Exam Analytics: {{ assignment.title }}</h1>
+    <p class="text-muted mb-0">Max Marks: {{ assignment.max_marks }} | Pass Threshold: {{ assignment.passing_percentage }}%</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('teacher.assignment_results', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-list-ol"></i> View Results List
+    </a>
+    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+  </div>
+</div>
+
+<div id="loading-state" class="text-center py-5">
+  <div class="spinner-border text-primary" role="status"></div>
+  <p class="mt-3 text-muted">Loading exam analytics…</p>
+</div>
+
+<div id="main-content" style="display:none;">
+  <!-- KPI Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-2"><div class="kpi-card"><div class="kpi-val" id="kpi-total">—</div><div class="kpi-lbl">Graded</div></div></div>
+    <div class="col-6 col-md-2"><div class="kpi-card"><div class="kpi-val text-success" id="kpi-passed">—</div><div class="kpi-lbl">Passed</div></div></div>
+    <div class="col-6 col-md-2"><div class="kpi-card"><div class="kpi-val text-danger" id="kpi-failed">—</div><div class="kpi-lbl">Failed</div></div></div>
+    <div class="col-6 col-md-2"><div class="kpi-card"><div class="kpi-val text-primary" id="kpi-avg">—</div><div class="kpi-lbl">Avg Score</div></div></div>
+    <div class="col-6 col-md-2"><div class="kpi-card"><div class="kpi-val text-success" id="kpi-high">—</div><div class="kpi-lbl">Highest</div></div></div>
+    <div class="col-6 col-md-2"><div class="kpi-card"><div class="kpi-val text-danger" id="kpi-low">—</div><div class="kpi-lbl">Lowest</div></div></div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Score Distribution -->
+    <div class="col-md-6">
+      <div class="chart-card">
+        <h5>📊 Score Grade Band Distribution</h5>
+        <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+      </div>
+    </div>
+    <!-- Pass / Fail Doughnut -->
+    <div class="col-md-6">
+      <div class="chart-card">
+        <h5>🍩 Pass vs Fail</h5>
+        <div class="chart-wrap"><canvas id="pfChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-Question Difficulty -->
+  <div class="chart-card mb-4">
+    <h5>🔬 Per-Question Average Score % <small class="text-muted fw-normal">(lower = students struggled more)</small></h5>
+    <div class="chart-wrap" style="height:320px;"><canvas id="qChart"></canvas></div>
+  </div>
+</div>
+
+<div id="no-data-msg" style="display:none;" class="alert alert-info">
+  No submissions have been evaluated for this exam yet.
+  <a href="{{ url_for('teacher.evaluate_copies', assignment_id=assignment.id) }}" class="alert-link">Evaluate the first copy →</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+async function load() {
+  try {
+    const res  = await fetch('{{ url_for("analytics.exam_analytics_data", assignment_id=assignment.id) }}');
+    const data = await res.json();
+
+    if (data.error === 'no_data') {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('no-data-msg').style.display = 'block';
+      return;
+    }
+
+    const s = data.summary;
+    document.getElementById('kpi-total').textContent  = s.total;
+    document.getElementById('kpi-passed').textContent = s.passed;
+    document.getElementById('kpi-failed').textContent = s.failed;
+    document.getElementById('kpi-avg').textContent    = s.avg_pct + '%';
+    document.getElementById('kpi-high').textContent   = s.highest_pct + '%';
+    document.getElementById('kpi-low').textContent    = s.lowest_pct + '%';
+
+    // Distribution
+    new Chart(document.getElementById('distChart'), {
+      type: 'bar',
+      data: {
+        labels: data.distribution.labels,
+        datasets: [{ label:'Students', data:data.distribution.values, backgroundColor:['#ef4444','#f59e0b','#3b82f6','#10b981','#6366f1'], borderRadius:8, borderSkipped:false }],
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true,ticks:{stepSize:1}}, x:{grid:{display:false}} } }
+    });
+
+    // Pass/Fail Doughnut
+    new Chart(document.getElementById('pfChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Passed', 'Failed'],
+        datasets: [{ data:[s.passed, s.failed], backgroundColor:['#10b981','#ef4444'], borderWidth:0, hoverOffset:10 }],
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom'}, tooltip:{ callbacks:{ label: ctx => `${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/s.total*100)}%)` } } } }
+    });
+
+    // Per-question bar
+    const qd = data.per_question;
+    if (qd.labels.length) {
+      new Chart(document.getElementById('qChart'), {
+        type: 'bar',
+        data: {
+          labels: qd.labels,
+          datasets: [{ label:'Avg Score %', data:qd.values, backgroundColor: qd.values.map(v => v >= 75 ? '#10b981' : v >= 50 ? '#f59e0b' : '#ef4444'), borderRadius:6, borderSkipped:false }],
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{min:0,max:100,grid:{color:'#f1f5f9'},ticks:{callback:v=>v+'%'}}, x:{grid:{display:false}} } }
+      });
+    } else {
+      document.getElementById('qChart').closest('.chart-card').innerHTML += '<p class="text-muted fst-italic mt-2">No per-question data available (requires Gemini evaluation).</p>';
+    }
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('main-content').style.display  = 'block';
+
+  } catch(e) {
+    document.getElementById('loading-state').innerHTML = `<p class="text-danger">Failed to load: ${e.message}</p>`;
+  }
+}
+load();
+</script>
+{% endblock %}

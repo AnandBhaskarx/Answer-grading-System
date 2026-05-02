@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Evaluate Copies: {{ assignment.title }}</h1>
+    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header bg-success text-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-upload"></i> Upload Answer Sheet</h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted">Upload a student's handwritten answer sheet. Our Gemini AI model will automatically extract the text, cross-reference it with the Master Answer Key, and assign a grade.</p>
+                <form id="evaluationForm" method="POST" enctype="multipart/form-data" onsubmit="handleEvaluation(event)">
+                    <div class="mb-3">
+                        <label for="enrollment_number" class="form-label fw-semibold">Student Enrollment Number</label>
+                        <input type="text" class="form-control" id="enrollment_number" name="enrollment_number" required placeholder="e.g. STU12345">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="student_files" class="form-label fw-semibold">Upload Answer Sheet (PDF or Multiple Images)</label>
+                        <input class="form-control" type="file" id="student_files" name="student_files" accept=".pdf,image/*" multiple required>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg fw-bold" id="submitBtn">
+                            Evaluate via Gemini AI <i class="bi bi-magic"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <div id="loadingIndicator" class="mt-4 text-center" style="display: none;">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 fw-bold text-success">Gemini AI is analyzing the handwriting and grading the answers...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function handleEvaluation(event) {
+        event.preventDefault();
+        const form = event.target;
+        
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        const enrollmentNumber = document.getElementById('enrollment_number').value;
+        const assignmentId = "{{ assignment.id }}";
+        
+        try {
+            // Check if student exists
+            let response = await fetch("{{ url_for('teacher.check_or_create_student') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    enrollment_number: enrollmentNumber,
+                    assignment_id: assignmentId,
+                    create_if_missing: false
+                })
+            });
+            
+            let data = await response.json();
+            
+            if (!data.exists) {
+                const createNew = confirm(`Student with enrollment number '${enrollmentNumber}' not found.\n\nWould you like to create a new profile for this student?`);
+                if (!createNew) {
+                    return; // User cancelled
+                }
+                
+                // Create student
+                response = await fetch("{{ url_for('teacher.check_or_create_student') }}", {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        enrollment_number: enrollmentNumber,
+                        assignment_id: assignmentId,
+                        create_if_missing: true
+                    })
+                });
+                
+                data = await response.json();
+                if (data.error) {
+                    alert("Failed to create student: " + data.error);
+                    return;
+                }
+            }
+            
+            // Show loading and submit the actual form
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('loadingIndicator').style.display = 'block';
+            form.submit();
+            
+        } catch (error) {
+            alert("An error occurred while verifying the student. Please try again.");
+            console.error(error);
+        }
+    }
+</script>
+{% endblock %}
