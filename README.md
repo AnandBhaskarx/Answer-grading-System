@@ -2,14 +2,16 @@
 
 # 🎓 GradingPro
 
-### AI-Powered Answer Sheet Evaluation Platform
+### Multi-Layer AI Answer Evaluation Platform
 
-*Automate exam grading with Google Gemini AI — from handwritten answer sheets to instant, detailed student reports.*
+*A hybrid NLP + multimodal AI system that combines OCR-powered text extraction, semantic sentence embeddings, vector similarity scoring, and keyword analysis to evaluate student answers with precision and depth.*
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.x-black?logo=flask)](https://flask.palletsprojects.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)](https://www.postgresql.org)
 [![Gemini AI](https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-orange?logo=google)](https://ai.google.dev)
+[![Sentence Transformers](https://img.shields.io/badge/Sentence--Transformers-SBERT-green?logo=huggingface)](https://www.sbert.net)
+[![NLP](https://img.shields.io/badge/NLP-Cosine%20Similarity-purple)](https://scikit-learn.org)
 
 </div>
 
@@ -30,9 +32,20 @@
 
 ## 🚀 What is GradingPro?
 
-**GradingPro** is an end-to-end AI-powered exam grading system built for teachers and students. Teachers upload question papers and answer keys; GradingPro uses **Google Gemini 2.5 Flash** to perform OCR on handwritten student answer sheets, compare them against the master answer key, and generate per-question marks with detailed AI feedback — all in seconds.
+**GradingPro** is an end-to-end AI-powered exam grading platform built for teachers and students. At its core, it uses a **two-layer hybrid evaluation pipeline** that goes well beyond a simple API call:
 
-Students can then log in with their enrollment number to view their scores, question-by-question breakdown, and personalised AI feedback. The entire cycle, from exam creation to result delivery, is managed within GradingPro.
+**Layer 1 — Multimodal OCR & Contextual Grading (Google Gemini 2.5 Flash):**  
+Handwritten or typed student answer sheets are uploaded alongside the question paper and master answer key. Gemini performs deep multimodal reasoning — it reads all pages of the answer booklet, understands the context of each question, and extracts the student's written responses through OCR. It then evaluates each answer question-by-question against the master key, returning structured JSON scores and per-question feedback.
+
+**Layer 2 — Semantic NLP Evaluation Pipeline (Local SBERT + Vector Similarity):**  
+Extracted answers are further processed through a local NLP pipeline:
+1. **Text Chunking** — Answers are segmented into meaningful units for granular comparison.
+2. **Sentence Embeddings** — Each chunk is encoded into a high-dimensional vector using **`all-MiniLM-L6-v2`** from the `sentence-transformers` library (SBERT), capturing the *semantic meaning* of the text rather than just keywords.
+3. **Cosine Similarity Scoring** — The student's answer vector is compared against the model answer vector using **cosine similarity**, producing a similarity score between 0 and 1 that reflects conceptual alignment regardless of exact wording.
+4. **Keyword Detection** — A secondary pass scans the student answer for domain-specific keywords defined by the teacher, identifying which key concepts were included and which were missed.
+5. **Composite Feedback Generation** — Similarity score and keyword analysis are combined to produce rich, human-readable feedback that tells the student exactly where they lost marks and why.
+
+This dual-layer approach ensures that even partial answers, paraphrased responses, or semantically equivalent but differently worded answers receive fair scores — going far beyond simple string matching. Students can then log in with their enrollment number to view their scores, per-question breakdown, similarity metrics, and personalised AI feedback. The entire cycle, from exam creation to result delivery, is managed within GradingPro.
 
 ---
 
@@ -45,7 +58,11 @@ Students can then log in with their enrollment number to view their scores, ques
 | **Classroom Management** | Create and manage multiple classrooms. Each classroom is isolated with its own students and exams. |
 | **Exam Creation** | Upload question papers and master answer keys as PDF or multiple image files. |
 | **Multi-File Evaluation** | Upload multi-page student answer booklets (PDF or image sets) for evaluation in one step. |
-| **Gemini AI Grading** | Gemini 2.5 Flash performs OCR on handwritten sheets, grades question-by-question, and returns structured JSON results. |
+| **Gemini OCR & Contextual Scoring** | Gemini 2.5 Flash reads handwritten answer sheets, performs multimodal OCR, understands question context, and returns structured per-question JSON results. |
+| **Semantic Similarity Engine** | Uses SBERT (`all-MiniLM-L6-v2`) to encode both student and model answers into sentence embeddings, then computes cosine similarity to measure conceptual alignment — not just surface text matching. |
+| **Text Chunking Pipeline** | Long answers are chunked into segments before encoding, ensuring that multi-part answers are evaluated holistically across all their components. |
+| **Keyword Analysis** | Teacher-defined domain keywords are scanned for in each submission. Missing and found keywords are tracked and surfaced in feedback to help students understand gaps in their knowledge. |
+| **Composite Feedback** | Similarity score and keyword coverage are combined to generate detailed, human-readable feedback per question. |
 | **Auto Student Onboarding** | If a student doesn't exist, GradingPro auto-creates their login account using the classroom's default password. |
 | **Per-Classroom Default Password** | Teachers set a class-wide default password students use for first login, ensuring privacy and control. |
 | **Results Dashboard** | High-level results table per exam: student name, score, pass/fail status. |
@@ -82,7 +99,11 @@ Students can then log in with their enrollment number to view their scores, ques
 |---|---|
 | **Backend** | Python 3.11+, Flask 3.x |
 | **Database** | PostgreSQL 16, SQLAlchemy ORM, Flask-Migrate (Alembic) |
-| **AI / ML** | Google Gemini 2.5 Flash (multimodal OCR + grading) |
+| **Multimodal AI (OCR)** | Google Gemini 2.5 Flash — reads handwritten answer sheets, performs visual OCR, and contextual question-by-question grading |
+| **Sentence Embeddings** | `sentence-transformers` — `all-MiniLM-L6-v2` SBERT model encodes answers into 384-dimensional semantic vectors |
+| **Vector Similarity** | PyTorch + `util.cos_sim` — cosine similarity between student and model answer embeddings for semantic scoring |
+| **Text Generation** | Hugging Face `transformers` pipeline (GPT-2) — for AI-generated model answer suggestions |
+| **NLP & Keyword Analysis** | Custom keyword detection pipeline — identifies found/missing domain-specific terms per submission |
 | **Authentication** | Flask-Login, Flask-Bcrypt |
 | **Frontend** | Bootstrap 5, Bootstrap Icons, Chart.js 4 |
 | **File Handling** | Werkzeug secure_filename, Google Files API |
@@ -107,8 +128,8 @@ gradingpro/
 │   │   ├── main.py              # Landing page
 │   │   └── chat.py              # AI assistant chatbot
 │   ├── services/
-│   │   ├── gemini_service.py    # Gemini API integration (OCR + grading)
-│   │   └── grading_service.py   # Legacy NLP grading service
+│   │   ├── gemini_service.py    # Gemini 2.5 Flash: multimodal OCR, file upload, contextual grading
+│   │   └── grading_service.py   # Local NLP pipeline: SBERT embeddings, cosine similarity, keyword analysis
 │   ├── templates/
 │   │   ├── base.html            # Base layout with sidebar navigation
 │   │   ├── analytics.html       # Classroom-level analytics landing
@@ -208,9 +229,14 @@ Open your browser at **http://localhost:5000**
 3. Create Exam → Upload Question Paper + Answer Key (PDF or images)
 4. Evaluate → Enter student enrollment number + upload answer sheet
    └─ If student doesn't exist → auto-created with default password
-5. Gemini AI analyzes the handwritten sheet → returns JSON scores
+5. Evaluation Pipeline runs automatically:
+   ├─ Gemini 2.5 Flash performs OCR on the uploaded answer sheet
+   ├─ Extracted answers are chunked and encoded into SBERT sentence embeddings
+   ├─ Cosine similarity is computed between student and model answer vectors
+   ├─ Keyword detection scans for found/missing domain concepts
+   └─ Composite score + detailed feedback generated per question
 6. View Results → See all students' scores for that exam
-7. Drill Down → Per-student: extracted answers, feedback, per-question marks
+7. Drill Down → Per-student: extracted answer text, similarity scores, keyword coverage, AI feedback, marks
 8. Analytics → Charts: avg score, trend, pass/fail, grade bands, at-risk students
 ```
 
